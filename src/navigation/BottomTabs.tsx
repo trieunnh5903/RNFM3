@@ -4,7 +4,6 @@ import {BottomTabNavigatorParamList} from '../types/navigation.type';
 import {AccountScreen, DiscoveryScreen, PlayMusicScreen} from '../screen';
 import {Image, Text, View} from 'react-native';
 import {icons} from '../constant';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 
