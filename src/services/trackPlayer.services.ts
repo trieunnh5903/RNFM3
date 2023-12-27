@@ -10,34 +10,35 @@ export async function configPlayer() {
   try {
     await TrackPlayer.setupPlayer({
       autoHandleInterruptions: true,
-    });
-    await TrackPlayer.updateOptions({
-      android: {
-        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
-        alwaysPauseOnInterruption: true,
-        stopForegroundGracePeriod: 0,
-      },
-      capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-        Capability.SeekTo,
-      ],
-      compactCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToPrevious,
-        Capability.SkipToNext,
-      ],
-      notificationCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToPrevious,
-        Capability.SkipToNext,
-        Capability.Stop,
-      ],
-      stopIcon: require('../assets/icons/close_FILL0_wght400_GRAD0_opsz40.png'),
+    }).then(() => {
+      TrackPlayer.updateOptions({
+        android: {
+          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
+          alwaysPauseOnInterruption: true,
+          stopForegroundGracePeriod: 0,
+        },
+        capabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.SeekTo,
+        ],
+        compactCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToPrevious,
+          Capability.SkipToNext,
+        ],
+        notificationCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToPrevious,
+          Capability.SkipToNext,
+          Capability.Stop,
+        ],
+        stopIcon: require('../assets/icons/close_FILL0_wght400_GRAD0_opsz40.png'),
+      });
     });
   } catch (e) {
     console.log('setupPlayer', e);

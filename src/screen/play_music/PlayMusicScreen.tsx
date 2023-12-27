@@ -2,7 +2,6 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   TouchableOpacity,
-  Image,
   Text,
   ImageBackground,
   StatusBar,
@@ -20,12 +19,12 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import Slider from '@react-native-community/slider';
 import styles from './style';
-import {colors, icons, sizes} from '../../constant';
+import {colors, sizes} from '../../constant';
 import {MusicCardHorizontal} from '../../components';
 import {Entypo, FontAwesome, FontAwesome5, Ionicons} from '../../utils/icons';
 import {BlurView} from '@react-native-community/blur';
 
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {addTracks, configPlayer} from '../../services/trackPlayer.services';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Animated, {
@@ -36,10 +35,14 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import {PlayMusicScreenProps} from '../../types/navigation';
+import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 
 const events = [Event.PlaybackActiveTrackChanged];
 
-function PlayMusicScreen() {
+function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
+  const tabBarHeight = useBottomTabBarHeight();
+  const isFocused = useIsFocused();
   const progress = useProgress();
   const playerState = usePlaybackState();
   const [queue, setQueue] = useState<Track[]>();
@@ -59,15 +62,35 @@ function PlayMusicScreen() {
   );
 
   useEffect(() => {
-    const setUpPlayer = async () => {
-      console.log('setUpPlayer');
+    const preparePlayer = async () => {
+      console.log('preparePlayer');
       await configPlayer();
       await initQueue();
-      const queue = await TrackPlayer.getQueue();
-      setQueue(queue);
+      await TrackPlayer.getQueue().then(value => setQueue(value));
     };
-    setUpPlayer();
+    preparePlayer();
   }, []);
+
+  useEffect(() => {
+    if (isPlaying.playing) {
+      startAnimationArtWork();
+    } else {
+      stopAnimationArtWork();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying]);
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', async e => {
+      if (isFocused) {
+        e.preventDefault();
+        await handleTogglePlay();
+      }
+    });
+
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation, isPlaying]);
 
   const startAnimationArtWork = () => {
     rotationValue.value = withRepeat(
@@ -103,12 +126,6 @@ function PlayMusicScreen() {
         console.log('PlaybackActiveTrackChanged');
         const index = await TrackPlayer.getActiveTrackIndex();
         setActiveTrackIndex(index);
-        // if (event.index && event.lastIndex) {
-        //   if (event.index < event.lastIndex) {
-        //     const next = await TrackPlayer.getTrack(event.index + 1);
-        //     console.log('nextTrack', next);
-        //   }
-        // }
         break;
       default:
         break;
@@ -122,11 +139,9 @@ function PlayMusicScreen() {
   const handleTogglePlay = async () => {
     if (playerState.state === State.Playing) {
       TrackPlayer.pause();
-      stopAnimationArtWork();
     } else {
       await initQueue();
       TrackPlayer.play();
-      startAnimationArtWork();
     }
   };
 
@@ -146,7 +161,7 @@ function PlayMusicScreen() {
             (queue && queue[activeTrackIndex || 0]?.artwork) ??
             'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
         }}
-        style={styles.container}>
+        style={[styles.container, {paddingBottom: tabBarHeight}]}>
         <BlurView
           style={styles.absolute}
           blurType="dark"
@@ -189,11 +204,7 @@ function PlayMusicScreen() {
           </TouchableOpacity>
         </View>
         <MusicCardHorizontal
-          track={
-            queue &&
-            (queue[(activeTrackIndex || 0) - 1] ||
-              queue[activeTrackIndex || queue.length - 1])
-          }
+          track={queue && (queue[(activeTrackIndex || 0) + 1] || queue[0])}
           style={styles.musicCard}
         />
         {/* pre, next */}
@@ -224,15 +235,6 @@ function PlayMusicScreen() {
           value={progress.position}
           thumbTintColor="#FFFFFF"
         />
-        {/* footer */}
-        <View style={styles.footerWrapper}>
-          <TouchableOpacity onPress={handleTogglePlay}>
-            <Image
-              source={isPlaying.playing ? icons.pause : icons.play}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
       </ImageBackground>
     </SafeAreaView>
   );
