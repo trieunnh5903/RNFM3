@@ -9,10 +9,15 @@ import UserSlected from '../assets/svg/ic_user_selected.svg';
 import Play from '../assets/svg/ic_play.svg';
 import Pause from '../assets/svg/ic_pause.svg';
 
-import {useActiveTrack, useIsPlaying} from 'react-native-track-player';
+import {
+  useActiveTrack,
+  useIsPlaying,
+  useProgress,
+} from 'react-native-track-player';
 import {colors} from '../constant';
 import {Feather} from '../utils/icons';
 import {BottomTabNavigatorParamList} from '../types/navigation';
+import {AnimatedCircularProgress} from 'react-native-circular-progress';
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 
 const BottomTabs = () => {
@@ -23,8 +28,6 @@ const BottomTabs = () => {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          // backgroundColor: 'black',
-          // borderColor: 'black',
           height: 70,
           position: 'absolute',
           left: 0,
@@ -92,21 +95,33 @@ const DiscoveryIcon = ({focused}: {focused: boolean}) => {
 const PlayMusicIcon = ({focused}: {focused: boolean}) => {
   const track = useActiveTrack();
   const {playing} = useIsPlaying();
+  const {duration, position} = useProgress();
+  const fill = (position / duration) * 100;
   return (
     <View style={{alignItems: 'center'}}>
       {!focused ? (
-        track?.artwork ? (
-          <Image
-            source={{
-              uri: track.artwork,
-            }}
-            style={styles.artWork}
-          />
-        ) : (
-          <View style={styles.emptyArtwork}>
-            <Feather name="music" color={colors.text} size={24} />
-          </View>
-        )
+        <AnimatedCircularProgress
+          rotation={0}
+          size={56}
+          width={3}
+          fill={fill || 0}
+          tintColor="#00e0ff"
+          backgroundColor="#3d5875">
+          {() =>
+            track?.artwork ? (
+              <Image
+                source={{
+                  uri: track.artwork,
+                }}
+                style={styles.artWork}
+              />
+            ) : (
+              <View style={styles.emptyArtwork}>
+                <Feather name="music" color={colors.text} size={24} />
+              </View>
+            )
+          }
+        </AnimatedCircularProgress>
       ) : playing ? (
         <Pause />
       ) : (

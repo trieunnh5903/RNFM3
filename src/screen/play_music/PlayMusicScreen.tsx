@@ -125,6 +125,9 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       case Event.PlaybackActiveTrackChanged:
         console.log('PlaybackActiveTrackChanged');
         const index = await TrackPlayer.getActiveTrackIndex();
+        const c = await TrackPlayer.getActiveTrack();
+        console.log('acitveIndex', index);
+        console.log('acitveTrack', c);
         setActiveTrackIndex(index);
         break;
       default:
@@ -146,11 +149,11 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   };
 
   const onNextPress = async () => {
-    await TrackPlayer.skipToPrevious();
+    await TrackPlayer.skipToNext();
   };
 
   const onPrevPress = async () => {
-    await TrackPlayer.skipToNext();
+    await TrackPlayer.skipToPrevious();
   };
 
   return (
