@@ -54,6 +54,8 @@ const styles = StyleSheet.create({
     height: '100%',
     aspectRatio: 1,
     borderRadius: sizes.screem_width,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   title: {

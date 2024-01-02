@@ -3,7 +3,7 @@ import React from 'react';
 
 const DiscoveryScreen = () => {
   return (
-    <View>
+    <View style={{backgroundColor: 'black', flex: 1}}>
       <Text>DiscoveryScreen</Text>
     </View>
   );

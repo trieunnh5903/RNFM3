@@ -3,7 +3,7 @@ import React from 'react';
 
 const AccountScreen = () => {
   return (
-    <View>
+    <View style={{backgroundColor: 'black', flex: 1}}>
       <Text>AccountScreen</Text>
     </View>
   );

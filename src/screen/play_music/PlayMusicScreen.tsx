@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -7,6 +7,7 @@ import {
   StatusBar,
   Platform,
   SafeAreaView,
+  AppState,
 } from 'react-native';
 import TrackPlayer, {
   State,
@@ -37,10 +38,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import {PlayMusicScreenProps} from '../../types/navigation';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
+import {Freeze} from 'react-freeze';
 
 const events = [Event.PlaybackActiveTrackChanged];
 
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
+  const appState = useRef(AppState.isAvailable);
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const progress = useProgress();
@@ -68,8 +71,12 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       await initQueue();
       await TrackPlayer.getQueue().then(value => setQueue(value));
     };
-    preparePlayer();
-  }, []);
+
+    if (appState.current) {
+      preparePlayer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appState.current]);
 
   useEffect(() => {
     if (isPlaying.playing) {
@@ -116,7 +123,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       }
     } catch (error) {
       await configPlayer();
-      console.log('setup', error);
+      console.log('initQueue', error);
     }
   }
 
@@ -125,9 +132,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       case Event.PlaybackActiveTrackChanged:
         console.log('PlaybackActiveTrackChanged');
         const index = await TrackPlayer.getActiveTrackIndex();
-        const c = await TrackPlayer.getActiveTrack();
-        console.log('acitveIndex', index);
-        console.log('acitveTrack', c);
         setActiveTrackIndex(index);
         break;
       default:
@@ -158,87 +162,101 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
 
   return (
     <SafeAreaView style={{flex: 1}}>
-      <ImageBackground
-        source={{
-          uri:
-            (queue && queue[activeTrackIndex || 0]?.artwork) ??
-            'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
-        }}
-        style={[styles.container, {paddingBottom: tabBarHeight}]}>
-        <BlurView
-          style={styles.absolute}
-          blurType="dark"
-          blurAmount={15}
-          reducedTransparencyFallbackColor="black"
-        />
-        {/* header */}
-        <View style={[styles.header, {marginTop: insets.top}]}>
-          <View>
-            <Text style={styles.headline}>
-              {queue && queue[activeTrackIndex || 0]?.title}
-            </Text>
-            <Text style={[styles.body, {color: colors.white_75}]}>
-              {queue && queue[activeTrackIndex || 0]?.artist}
-            </Text>
-          </View>
-          <TouchableOpacity>
-            <Ionicons name="search" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* artwork */}
-        <View style={{flex: 1, alignItems: 'center'}}>
-          <Animated.Image
-            source={{
-              uri:
-                (queue && queue[activeTrackIndex || 0]?.artwork) ??
-                'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
-            }}
-            style={[styles.artwork, artWorkAnimatedStyle]}
+      <Freeze freeze={!queue}>
+        <ImageBackground
+          source={{
+            uri:
+              (queue && queue[activeTrackIndex || 0]?.artwork) ??
+              'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
+          }}
+          style={[styles.container, {paddingBottom: tabBarHeight}]}>
+          <BlurView
+            style={styles.absolute}
+            blurType="dark"
+            blurAmount={15}
+            reducedTransparencyFallbackColor="black"
           />
-        </View>
+          {/* header */}
+          <View style={[styles.header, {marginTop: insets.top}]}>
+            <View>
+              <Text style={styles.headline}>
+                {queue && queue[activeTrackIndex || 0]?.title}
+              </Text>
+              <Text style={[styles.body, {color: colors.white_75}]}>
+                {queue && queue[activeTrackIndex || 0]?.artist}
+              </Text>
+            </View>
+            <TouchableOpacity>
+              <Ionicons name="search" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
 
-        {/* next */}
-        <View style={styles.nextWrapper}>
-          <Text style={styles.title}>Tiếp theo</Text>
-          <TouchableOpacity style={styles.addWrapper}>
-            <Text style={styles.subtitle}>Thêm</Text>
-            <FontAwesome name="angle-right" size={20} color={colors.white_75} />
-          </TouchableOpacity>
-        </View>
-        <MusicCardHorizontal
-          track={queue && (queue[(activeTrackIndex || 0) + 1] || queue[0])}
-          style={styles.musicCard}
-        />
-        {/* pre, next */}
-        <View style={styles.navMusicContainer}>
-          <TouchableOpacity style={{padding: 6}}>
-            <FontAwesome5 name="headphones-alt" size={34} color={colors.text} />
-            <Text style={[styles.textLabel]}>120k</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onPrevPress} style={{padding: 6}}>
-            <Ionicons name="play-skip-back" size={38} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onNextPress} style={{padding: 6}}>
-            <Ionicons name="play-skip-forward" size={38} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={{padding: 6}}>
-            <Entypo name="add-to-list" size={46} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-        {/* slider */}
-        <Slider
-          style={{width: '100%', marginBottom: sizes.margin}}
-          minimumValue={0}
-          step={1}
-          maximumValue={progress.duration}
-          minimumTrackTintColor="#FFFFFF"
-          maximumTrackTintColor="rgba(255, 255, 255, 0.40)"
-          onSlidingComplete={value => onChangeSlider(value)}
-          value={progress.position}
-          thumbTintColor="#FFFFFF"
-        />
-      </ImageBackground>
+          {/* artwork */}
+          <View style={{flex: 1, alignItems: 'center'}}>
+            <Animated.Image
+              source={{
+                uri:
+                  (queue && queue[activeTrackIndex || 0]?.artwork) ??
+                  'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
+              }}
+              style={[styles.artwork, artWorkAnimatedStyle]}
+            />
+          </View>
+
+          {/* next */}
+          <View style={styles.nextWrapper}>
+            <Text style={styles.title}>Tiếp theo</Text>
+            <TouchableOpacity style={styles.addWrapper}>
+              <Text style={styles.subtitle}>Thêm</Text>
+              <FontAwesome
+                name="angle-right"
+                size={20}
+                color={colors.white_75}
+              />
+            </TouchableOpacity>
+          </View>
+          <MusicCardHorizontal
+            track={queue && (queue[(activeTrackIndex || 0) + 1] || queue[0])}
+            style={styles.musicCard}
+          />
+          {/* pre, next */}
+          <View style={styles.navMusicContainer}>
+            <TouchableOpacity style={{padding: 6}}>
+              <FontAwesome5
+                name="headphones-alt"
+                size={34}
+                color={colors.text}
+              />
+              <Text style={[styles.textLabel]}>120k</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onPrevPress} style={{padding: 6}}>
+              <Ionicons name="play-skip-back" size={38} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onNextPress} style={{padding: 6}}>
+              <Ionicons
+                name="play-skip-forward"
+                size={38}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={{padding: 6}}>
+              <Entypo name="add-to-list" size={46} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          {/* slider */}
+          <Slider
+            style={{width: '100%', marginBottom: sizes.margin}}
+            minimumValue={0}
+            step={1}
+            maximumValue={progress.duration}
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="rgba(255, 255, 255, 0.40)"
+            onSlidingComplete={value => onChangeSlider(value)}
+            value={progress.position}
+            thumbTintColor="#FFFFFF"
+          />
+        </ImageBackground>
+      </Freeze>
     </SafeAreaView>
   );
 }
