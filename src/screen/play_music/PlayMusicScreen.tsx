@@ -8,6 +8,8 @@ import {
   Platform,
   SafeAreaView,
   AppState,
+  FlatList,
+  ViewToken,
 } from 'react-native';
 import TrackPlayer, {
   State,
@@ -15,23 +17,20 @@ import TrackPlayer, {
   useIsPlaying,
   usePlaybackState,
   useProgress,
-  useTrackPlayerEvents,
   Event,
 } from 'react-native-track-player';
 import Slider from '@react-native-community/slider';
 import styles from './style';
 import {colors, sizes} from '../../constant';
-import {MusicCardHorizontal} from '../../components';
-import {Entypo, FontAwesome, FontAwesome5, Ionicons} from '../../utils/icons';
+import {Entypo, FontAwesome5, Ionicons} from '../../utils/icons';
 import {BlurView} from '@react-native-community/blur';
 
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {addTracks, configPlayer} from '../../services/trackPlayer.services';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Animated, {
+import {
   Easing,
   cancelAnimation,
-  useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -39,8 +38,7 @@ import Animated, {
 import {PlayMusicScreenProps} from '../../types/navigation';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import {Freeze} from 'react-freeze';
-
-const events = [Event.PlaybackActiveTrackChanged];
+import {Image} from 'react-native';
 
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const appState = useRef(AppState.isAvailable);
@@ -52,9 +50,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   // console.log(playerState.state);
   const insets = useSafeAreaInsets();
   const isPlaying = useIsPlaying();
-  const [activeTrackIndex, setActiveTrackIndex] = useState<number | undefined>(
-    0,
-  );
+  const [activeTrackIndex, setActiveTrackIndex] = useState<number>(0);
   const rotationValue = useSharedValue(0);
   useFocusEffect(
     useCallback(() => {
@@ -110,10 +106,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     cancelAnimation(rotationValue);
   };
 
-  const artWorkAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{rotate: rotationValue.value + 'deg'}],
-  }));
-
   // player event
   async function initQueue() {
     try {
@@ -127,17 +119,21 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     }
   }
 
-  useTrackPlayerEvents(events, async event => {
-    switch (event.type) {
-      case Event.PlaybackActiveTrackChanged:
-        console.log('PlaybackActiveTrackChanged');
-        const index = await TrackPlayer.getActiveTrackIndex();
-        setActiveTrackIndex(index);
-        break;
-      default:
-        break;
-    }
-  });
+  // useTrackPlayerEvents(events, async event => {
+  //   switch (event.type) {
+  //     case Event.PlaybackActiveTrackChanged:
+  //       console.log('PlaybackActiveTrackChanged');
+  //       const index = await TrackPlayer.getActiveTrackIndex();
+  //       if (index) {
+  //         setActiveTrackIndex(index);
+  //       }
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  // });
+
+  // console.log(activeTrackIndex);
 
   const onChangeSlider = async (value: number) => {
     await TrackPlayer.seekTo(value);
@@ -159,6 +155,21 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const onPrevPress = async () => {
     await TrackPlayer.skipToPrevious();
   };
+
+  const handleViewableItemsChanged = useRef(
+    ({viewableItems}: {viewableItems: ViewToken[]; changed: ViewToken[]}) => {
+      if (viewableItems.length === 0) {
+        return;
+      }
+      const index = viewableItems[0].index;
+      console.log(index);
+
+      if (index !== null) {
+        setActiveTrackIndex(index);
+        TrackPlayer.skip(index);
+      }
+    },
+  ).current;
 
   return (
     <SafeAreaView style={{flex: 1}}>
@@ -192,33 +203,34 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
           </View>
 
           {/* artwork */}
-          <View style={{flex: 1, alignItems: 'center'}}>
-            <Animated.Image
-              source={{
-                uri:
-                  (queue && queue[activeTrackIndex || 0]?.artwork) ??
-                  'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
-              }}
-              style={[styles.artwork, artWorkAnimatedStyle]}
-            />
-          </View>
-
-          {/* next */}
-          <View style={styles.nextWrapper}>
-            <Text style={styles.title}>Tiếp theo</Text>
-            <TouchableOpacity style={styles.addWrapper}>
-              <Text style={styles.subtitle}>Thêm</Text>
-              <FontAwesome
-                name="angle-right"
-                size={20}
-                color={colors.white_75}
-              />
-            </TouchableOpacity>
-          </View>
-          <MusicCardHorizontal
-            track={queue && (queue[(activeTrackIndex || 0) + 1] || queue[0])}
-            style={styles.musicCard}
+          <FlatList
+            data={queue}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            overScrollMode="never"
+            onViewableItemsChanged={handleViewableItemsChanged}
+            viewabilityConfig={{
+              waitForInteraction: true,
+              viewAreaCoveragePercentThreshold: 95,
+            }}
+            keyExtractor={i => i.url + i.title}
+            renderItem={({item}) => {
+              return (
+                <View style={styles.artWorkWrapper}>
+                  <Image
+                    source={{
+                      uri:
+                        item.artwork ??
+                        'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
+                    }}
+                    style={[styles.artwork]}
+                  />
+                </View>
+              );
+            }}
           />
+
           {/* pre, next */}
           <View style={styles.navMusicContainer}>
             <TouchableOpacity style={{padding: 6}}>

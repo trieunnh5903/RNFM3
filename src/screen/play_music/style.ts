@@ -9,7 +9,8 @@ const styles = StyleSheet.create({
   },
   footerWrapper: {padding: 16, alignItems: 'center'},
   container: {
-    flex: 1,
+    width: sizes.screem_width,
+    height: sizes.screem_height,
     justifyContent: 'center',
     backgroundColor: '#112',
   },
@@ -50,12 +51,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 
+  artWorkWrapper: {
+    width: sizes.screem_width,
+    height: 'auto',
+    padding: 16,
+    paddingTop: 0,
+  },
+
   artwork: {
     height: '100%',
-    aspectRatio: 1,
-    borderRadius: sizes.screem_width,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%',
+    borderRadius: 6,
   },
 
   title: {
