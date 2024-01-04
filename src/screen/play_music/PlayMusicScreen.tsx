@@ -12,12 +12,13 @@ import {
   ViewToken,
 } from 'react-native';
 import TrackPlayer, {
+  Event,
   State,
   Track,
   useIsPlaying,
   usePlaybackState,
   useProgress,
-  Event,
+  useTrackPlayerEvents,
 } from 'react-native-track-player';
 import Slider from '@react-native-community/slider';
 import styles from './style';
@@ -28,30 +29,24 @@ import {BlurView} from '@react-native-community/blur';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {addTracks, configPlayer} from '../../services/trackPlayer.services';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {
-  Easing,
-  cancelAnimation,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+
 import {PlayMusicScreenProps} from '../../types/navigation';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import {Freeze} from 'react-freeze';
 import {Image} from 'react-native';
 
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
-  const appState = useRef(AppState.isAvailable);
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const progress = useProgress();
   const playerState = usePlaybackState();
   const [queue, setQueue] = useState<Track[]>();
-  // console.log(playerState.state);
   const insets = useSafeAreaInsets();
   const isPlaying = useIsPlaying();
-  const [activeTrackIndex, setActiveTrackIndex] = useState<number>(0);
-  const rotationValue = useSharedValue(0);
+  const [activeTrackIndex, setActiveTrackIndex] = useState<
+    number | undefined
+  >();
+  const artWorkRef = useRef<FlatList>(null);
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('default');
@@ -66,22 +61,21 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       await configPlayer();
       await initQueue();
       await TrackPlayer.getQueue().then(value => setQueue(value));
+      synchronizeUI();
     };
 
-    if (appState.current) {
+    if (AppState.currentState === 'active') {
       preparePlayer();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appState.current]);
-
-  useEffect(() => {
-    if (isPlaying.playing) {
-      startAnimationArtWork();
-    } else {
-      stopAnimationArtWork();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying]);
+    const synchronizeUI = async () => {
+      let index = await TrackPlayer.getActiveTrackIndex();
+      console.log('synchronizeUI', index);
+      if (index !== undefined) {
+        setActiveTrackIndex(index);
+        artWorkRef.current?.scrollToIndex({index, animated: false});
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('tabPress', async e => {
@@ -95,18 +89,22 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, isPlaying]);
 
-  const startAnimationArtWork = () => {
-    rotationValue.value = withRepeat(
-      withTiming(360 * 100, {duration: 10800 * 100, easing: Easing.linear}),
-      -1,
-    );
-  };
-
-  const stopAnimationArtWork = () => {
-    cancelAnimation(rotationValue);
-  };
-
   // player event
+  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], event => {
+    switch (event.type) {
+      case Event.PlaybackActiveTrackChanged:
+        console.log('PlaybackActiveTrackChanged');
+        const index = event.index;
+        if (index !== undefined && index !== activeTrackIndex) {
+          artWorkRef.current?.scrollToIndex({index, animated: false});
+          setActiveTrackIndex(index);
+        }
+        break;
+      default:
+        break;
+    }
+  });
+
   async function initQueue() {
     try {
       const queue = await TrackPlayer.getQueue();
@@ -119,22 +117,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     }
   }
 
-  // useTrackPlayerEvents(events, async event => {
-  //   switch (event.type) {
-  //     case Event.PlaybackActiveTrackChanged:
-  //       console.log('PlaybackActiveTrackChanged');
-  //       const index = await TrackPlayer.getActiveTrackIndex();
-  //       if (index) {
-  //         setActiveTrackIndex(index);
-  //       }
-  //       break;
-  //     default:
-  //       break;
-  //   }
-  // });
-
-  // console.log(activeTrackIndex);
-
   const onChangeSlider = async (value: number) => {
     await TrackPlayer.seekTo(value);
   };
@@ -143,7 +125,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     if (playerState.state === State.Playing) {
       TrackPlayer.pause();
     } else {
-      await initQueue();
+      // await initQueue();
       TrackPlayer.play();
     }
   };
@@ -157,15 +139,13 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   };
 
   const handleViewableItemsChanged = useRef(
-    ({viewableItems}: {viewableItems: ViewToken[]; changed: ViewToken[]}) => {
+    async ({viewableItems}: {viewableItems: ViewToken[]}) => {
       if (viewableItems.length === 0) {
         return;
       }
       const index = viewableItems[0].index;
-      console.log(index);
-
-      if (index !== null) {
-        setActiveTrackIndex(index);
+      const activeTrackIndex = await TrackPlayer.getActiveTrackIndex();
+      if (index !== null && index !== activeTrackIndex) {
         TrackPlayer.skip(index);
       }
     },
@@ -204,6 +184,12 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
 
           {/* artwork */}
           <FlatList
+            getItemLayout={(data, index) => ({
+              length: sizes.screen_width,
+              offset: sizes.screen_width * index,
+              index,
+            })}
+            ref={artWorkRef}
             data={queue}
             horizontal
             pagingEnabled

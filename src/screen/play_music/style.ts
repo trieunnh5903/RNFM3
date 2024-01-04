@@ -9,10 +9,11 @@ const styles = StyleSheet.create({
   },
   footerWrapper: {padding: 16, alignItems: 'center'},
   container: {
-    width: sizes.screem_width,
-    height: sizes.screem_height,
+    width: sizes.screen_width,
+    height: sizes.screen_height,
     justifyContent: 'center',
     backgroundColor: '#112',
+    flex: 1,
   },
   absolute: {
     position: 'absolute',
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
   },
 
   artWorkWrapper: {
-    width: sizes.screem_width,
+    width: sizes.screen_width,
     height: 'auto',
     padding: 16,
     paddingTop: 0,
