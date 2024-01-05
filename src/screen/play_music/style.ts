@@ -2,6 +2,21 @@ import {StyleSheet} from 'react-native';
 import {colors, sizes} from '../../constant';
 
 const styles = StyleSheet.create({
+  tooltipText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginTop: 10,
+  },
+
+  tooltipContainer: {
+    flex: 1,
+    padding: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+
   navMusicContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',

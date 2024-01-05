@@ -9,6 +9,7 @@ const icons = {
   user_non_selected: require('../assets/icons/ic_user_non_selected.png'),
   user_selected: require('../assets/icons/ic_user_selected.png'),
   close: require('../assets/icons/close_FILL0_wght400_GRAD0_opsz40.png'),
+  swipe: require('../assets/icons/swipe.png'),
 };
 
 export default icons;

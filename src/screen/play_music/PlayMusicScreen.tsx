@@ -22,7 +22,7 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import Slider from '@react-native-community/slider';
 import styles from './style';
-import {colors, sizes} from '../../constant';
+import {colors, icons, sizes} from '../../constant';
 import {Entypo, FontAwesome5, Ionicons} from '../../utils/icons';
 import {BlurView} from '@react-native-community/blur';
 
@@ -34,6 +34,13 @@ import {PlayMusicScreenProps} from '../../types/navigation';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import {Freeze} from 'react-freeze';
 import {Image} from 'react-native';
+import {Modal, Portal} from 'react-native-paper';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const tabBarHeight = useBottomTabBarHeight();
@@ -151,9 +158,44 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     },
   ).current;
 
+  const [visible, setVisible] = React.useState(false);
+  const swipeOffset = useSharedValue(6);
+
+  const animatedStyles = useAnimatedStyle(() => ({
+    transform: [{translateX: swipeOffset.value}],
+  }));
+
+  React.useEffect(() => {
+    swipeOffset.value = withRepeat(
+      withTiming(-swipeOffset.value, {duration: 600}),
+      -1,
+      true,
+    );
+  }, []);
+
   return (
     <SafeAreaView style={{flex: 1}}>
       <Freeze freeze={!queue}>
+        <Portal>
+          <Modal
+            visible={true}
+            onDismiss={() => setVisible(false)}
+            contentContainerStyle={{
+              flex: 1,
+            }}>
+            <TouchableOpacity
+              onPress={() => setVisible(false)}
+              style={styles.tooltipContainer}>
+              <Animated.Image
+                resizeMode="contain"
+                style={[{width: 150, height: 150}, animatedStyles]}
+                source={icons.swipe}
+                tintColor={'white'}
+              />
+              <Text style={styles.tooltipText}>Vuốt để chuyển bài</Text>
+            </TouchableOpacity>
+          </Modal>
+        </Portal>
         <ImageBackground
           source={{
             uri:
