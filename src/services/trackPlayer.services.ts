@@ -41,7 +41,7 @@ export async function configPlayer() {
       });
     });
   } catch (e) {
-    console.log('configPlayer', e);
+    // console.log('configPlayer', e);
   }
 }
 

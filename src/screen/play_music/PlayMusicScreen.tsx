@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import TrackPlayer, {
   Event,
+  RepeatMode,
   State,
   Track,
   useIsPlaying,
@@ -23,7 +24,11 @@ import TrackPlayer, {
 import Slider from '@react-native-community/slider';
 import styles from './style';
 import {colors, icons, sizes} from '../../constant';
-import {Entypo, FontAwesome5, Ionicons} from '../../utils/icons';
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '../../utils/icons';
 import {BlurView} from '@react-native-community/blur';
 
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
@@ -56,9 +61,10 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     number | undefined
   >();
   const artWorkRef = useRef<FlatList>(null);
-  const {playMusicTooltip} = useAppSelector(state => state.tooltip);
+  const playMusicTooltip = useAppSelector(state => state.playMusicTooltip);
   const dispatch = useAppDispatch();
   const swipeOffset = useSharedValue(6);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(RepeatMode.Queue);
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('default');
@@ -66,7 +72,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       StatusBar.setTranslucent(true);
     }, []),
   );
-
   useEffect(() => {
     // player
     const preparePlayer = async () => {
@@ -82,6 +87,8 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     }
     const synchronizeUI = async () => {
       let index = await TrackPlayer.getActiveTrackIndex();
+      const repeat = await TrackPlayer.getRepeatMode();
+      setRepeatMode(repeat);
       console.log('synchronizeUI', index);
       if (index !== undefined) {
         setActiveTrackIndex(index);
@@ -117,6 +124,23 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
 
   const handleTooltipPress = () => {
     dispatch(turnOffPlayMusicTooltip());
+  };
+
+  const handleChangeRepeatMode = async () => {
+    switch (repeatMode) {
+      case RepeatMode.Off:
+        await TrackPlayer.setRepeatMode(RepeatMode.Track);
+        setRepeatMode(RepeatMode.Track);
+        break;
+      case RepeatMode.Track:
+        await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+        setRepeatMode(RepeatMode.Queue);
+        break;
+      default:
+        await TrackPlayer.setRepeatMode(RepeatMode.Off);
+        setRepeatMode(RepeatMode.Off);
+        break;
+    }
   };
 
   // player event
@@ -285,8 +309,20 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
                 color={colors.text}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={{padding: 6}}>
-              <Entypo name="add-to-list" size={46} color={colors.text} />
+            <TouchableOpacity
+              onPress={handleChangeRepeatMode}
+              style={{padding: 6}}>
+              <MaterialCommunityIcons
+                name={
+                  repeatMode === RepeatMode.Off
+                    ? 'repeat-off'
+                    : repeatMode === RepeatMode.Track
+                    ? 'repeat-once'
+                    : 'repeat'
+                }
+                size={36}
+                color={colors.text}
+              />
             </TouchableOpacity>
           </View>
           {/* slider */}

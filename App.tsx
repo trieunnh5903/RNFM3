@@ -7,18 +7,21 @@ import 'react-native-gesture-handler';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {PaperProvider} from 'react-native-paper';
 import {Provider} from 'react-redux';
-import {store} from './src/redux/store';
+import {persistor, store} from './src/redux/store';
+import {PersistGate} from 'redux-persist/integration/react';
 
 const App = () => {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{flex: 1}}>
         <Provider store={store}>
-          <PaperProvider>
-            <NavigationContainer>
-              <BottomTabs />
-            </NavigationContainer>
-          </PaperProvider>
+          <PersistGate loading={null} persistor={persistor}>
+            <PaperProvider>
+              <NavigationContainer>
+                <BottomTabs />
+              </NavigationContainer>
+            </PaperProvider>
+          </PersistGate>
         </Provider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
