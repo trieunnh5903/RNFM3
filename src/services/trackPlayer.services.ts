@@ -40,7 +40,9 @@ export async function configPlayer() {
         stopIcon: require('../assets/icons/close_FILL0_wght400_GRAD0_opsz40.png'),
       });
     });
-  } catch (e) {}
+  } catch (e) {
+    console.log('configPlayer', e);
+  }
 }
 
 export async function addTracks() {

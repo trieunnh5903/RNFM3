@@ -6,16 +6,20 @@ import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {PaperProvider} from 'react-native-paper';
+import {Provider} from 'react-redux';
+import {store} from './src/redux/store';
 
 const App = () => {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{flex: 1}}>
-        <PaperProvider>
-          <NavigationContainer>
-            <BottomTabs />
-          </NavigationContainer>
-        </PaperProvider>
+        <Provider store={store}>
+          <PaperProvider>
+            <NavigationContainer>
+              <BottomTabs />
+            </NavigationContainer>
+          </PaperProvider>
+        </Provider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

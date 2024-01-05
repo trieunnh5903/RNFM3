@@ -41,6 +41,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import {useAppDispatch, useAppSelector} from '../../utils/hooks';
+import {turnOffPlayMusicTooltip} from '../../redux/slice/tooltip.slice';
 
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const tabBarHeight = useBottomTabBarHeight();
@@ -54,6 +56,9 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     number | undefined
   >();
   const artWorkRef = useRef<FlatList>(null);
+  const {playMusicTooltip} = useAppSelector(state => state.tooltip);
+  const dispatch = useAppDispatch();
+  const swipeOffset = useSharedValue(6);
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('default');
@@ -63,6 +68,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   );
 
   useEffect(() => {
+    // player
     const preparePlayer = async () => {
       console.log('preparePlayer');
       await configPlayer();
@@ -82,9 +88,18 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
         artWorkRef.current?.scrollToIndex({index, animated: false});
       }
     };
+
+    // tooltip
+    swipeOffset.value = withRepeat(
+      withTiming(-swipeOffset.value, {duration: 600}),
+      -1,
+      true,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
+    // bottom tab
     const unsubscribe = navigation.addListener('tabPress', async e => {
       if (isFocused) {
         e.preventDefault();
@@ -95,6 +110,14 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, isPlaying]);
+
+  const animatedStyles = useAnimatedStyle(() => ({
+    transform: [{translateX: swipeOffset.value}],
+  }));
+
+  const handleTooltipPress = () => {
+    dispatch(turnOffPlayMusicTooltip());
+  };
 
   // player event
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], event => {
@@ -132,7 +155,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     if (playerState.state === State.Playing) {
       TrackPlayer.pause();
     } else {
-      // await initQueue();
       TrackPlayer.play();
     }
   };
@@ -158,44 +180,28 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     },
   ).current;
 
-  const [visible, setVisible] = React.useState(false);
-  const swipeOffset = useSharedValue(6);
-
-  const animatedStyles = useAnimatedStyle(() => ({
-    transform: [{translateX: swipeOffset.value}],
-  }));
-
-  React.useEffect(() => {
-    swipeOffset.value = withRepeat(
-      withTiming(-swipeOffset.value, {duration: 600}),
-      -1,
-      true,
-    );
-  }, []);
-
   return (
     <SafeAreaView style={{flex: 1}}>
+      <Portal>
+        <Modal
+          visible={playMusicTooltip}
+          contentContainerStyle={{
+            flex: 1,
+          }}>
+          <TouchableOpacity
+            onPress={handleTooltipPress}
+            style={styles.tooltipContainer}>
+            <Animated.Image
+              resizeMode="contain"
+              style={[{width: 150, height: 150}, animatedStyles]}
+              source={icons.swipe}
+              tintColor={'white'}
+            />
+            <Text style={styles.tooltipText}>Vuốt để chuyển bài</Text>
+          </TouchableOpacity>
+        </Modal>
+      </Portal>
       <Freeze freeze={!queue}>
-        <Portal>
-          <Modal
-            visible={true}
-            onDismiss={() => setVisible(false)}
-            contentContainerStyle={{
-              flex: 1,
-            }}>
-            <TouchableOpacity
-              onPress={() => setVisible(false)}
-              style={styles.tooltipContainer}>
-              <Animated.Image
-                resizeMode="contain"
-                style={[{width: 150, height: 150}, animatedStyles]}
-                source={icons.swipe}
-                tintColor={'white'}
-              />
-              <Text style={styles.tooltipText}>Vuốt để chuyển bài</Text>
-            </TouchableOpacity>
-          </Modal>
-        </Portal>
         <ImageBackground
           source={{
             uri:
