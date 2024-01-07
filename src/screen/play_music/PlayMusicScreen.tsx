@@ -37,7 +37,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {PlayMusicScreenProps} from '../../types/navigation';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
-import {Freeze} from 'react-freeze';
 import {Image} from 'react-native';
 import {Modal, Portal} from 'react-native-paper';
 import Animated, {
@@ -48,7 +47,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import {useAppDispatch, useAppSelector} from '../../utils/hooks';
 import {turnOffPlayMusicTooltip} from '../../redux/slice/tooltip.slice';
+import {LogBox} from 'react-native';
 
+LogBox.ignoreLogs(['ReactImageView: Image source "null" doesn\'t exist']);
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
@@ -57,9 +58,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const [queue, setQueue] = useState<Track[]>();
   const insets = useSafeAreaInsets();
   const isPlaying = useIsPlaying();
-  const [activeTrackIndex, setActiveTrackIndex] = useState<
-    number | undefined
-  >();
+  const [activeTrackIndex, setActiveTrackIndex] = useState<number>(0);
   const artWorkRef = useRef<FlatList>(null);
   const playMusicTooltip = useAppSelector(state => state.playMusicTooltip);
   const dispatch = useAppDispatch();
@@ -89,10 +88,13 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       let index = await TrackPlayer.getActiveTrackIndex();
       const repeat = await TrackPlayer.getRepeatMode();
       setRepeatMode(repeat);
-      console.log('synchronizeUI', index);
+      console.log('synchronizeUI');
       if (index !== undefined) {
         setActiveTrackIndex(index);
-        artWorkRef.current?.scrollToIndex({index, animated: false});
+        if (queue && queue?.length > 0) {
+          artWorkRef.current?.scrollToIndex({index, animated: false});
+        }
+        // artWorkRef.current?.scrollToIndex({index, animated: false});
       }
     };
 
@@ -144,20 +146,36 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   };
 
   // player event
-  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], event => {
-    switch (event.type) {
-      case Event.PlaybackActiveTrackChanged:
-        console.log('PlaybackActiveTrackChanged');
-        const index = event.index;
-        if (index !== undefined && index !== activeTrackIndex) {
-          artWorkRef.current?.scrollToIndex({index, animated: false});
-          setActiveTrackIndex(index);
-        }
-        break;
-      default:
-        break;
-    }
-  });
+  useTrackPlayerEvents(
+    [
+      Event.PlaybackActiveTrackChanged,
+      Event.MetadataCommonReceived,
+      Event.MetadataTimedReceived,
+    ],
+    event => {
+      switch (event.type) {
+        case Event.PlaybackActiveTrackChanged:
+          console.log('PlaybackActiveTrackChanged');
+          const index = event.index;
+          if (index !== undefined && index !== activeTrackIndex) {
+            if (queue && queue?.length > 0) {
+              artWorkRef.current?.scrollToIndex({index, animated: false});
+            }
+            setActiveTrackIndex(index);
+          }
+          break;
+
+        case Event.MetadataCommonReceived:
+          console.log('MetadataCommonReceived', event.metadata);
+          break;
+        case Event.MetadataTimedReceived:
+          console.log('MetadataTimedReceived', event.metadata);
+          break;
+        default:
+          break;
+      }
+    },
+  );
 
   async function initQueue() {
     try {
@@ -225,12 +243,10 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
           </TouchableOpacity>
         </Modal>
       </Portal>
-      <Freeze freeze={!queue}>
+      {queue && (
         <ImageBackground
           source={{
-            uri:
-              (queue && queue[activeTrackIndex || 0]?.artwork) ??
-              'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
+            uri: queue && queue[activeTrackIndex]?.artwork,
           }}
           style={[styles.container, {paddingBottom: tabBarHeight}]}>
           <BlurView
@@ -243,10 +259,10 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
           <View style={[styles.header, {marginTop: insets.top}]}>
             <View>
               <Text style={styles.headline}>
-                {queue && queue[activeTrackIndex || 0]?.title}
+                {queue && queue[activeTrackIndex]?.title}
               </Text>
               <Text style={[styles.body, {color: colors.white_75}]}>
-                {queue && queue[activeTrackIndex || 0]?.artist}
+                {queue && queue[activeTrackIndex]?.artist}
               </Text>
             </View>
             <TouchableOpacity>
@@ -320,7 +336,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
                     ? 'repeat-once'
                     : 'repeat'
                 }
-                size={36}
+                size={38}
                 color={colors.text}
               />
             </TouchableOpacity>
@@ -338,7 +354,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
             thumbTintColor="#FFFFFF"
           />
         </ImageBackground>
-      </Freeze>
+      )}
     </SafeAreaView>
   );
 }

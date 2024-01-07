@@ -59,11 +59,11 @@ export async function addTracks() {
     {
       id: 'Anh Là Ai',
       url: require('../assets/audio/Anh-La-Ai-Phuong-Ly.mp3'),
-      title: 'Anh Là Ai',
-      artist: 'Phương Ly',
-      duration: 4 * 60 + 17,
-      artwork:
-        'https://photo-resize-zmp3.zmdcdn.me/w600_r300x169_jpeg/thumb_video/1/0/8/9/1089716e93a958a8aade92de364f415a.jpg',
+      // title: 'Anh Là Ai',
+      // artist: 'Phương Ly',
+      // duration: 4 * 60 + 17,
+      // artwork:
+      //   'https://photo-resize-zmp3.zmdcdn.me/w600_r300x169_jpeg/thumb_video/1/0/8/9/1089716e93a958a8aade92de364f415a.jpg',
     },
     {
       id: 'One Summer Day',
