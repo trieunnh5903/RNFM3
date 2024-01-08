@@ -48,6 +48,7 @@ import Animated, {
 import {useAppDispatch, useAppSelector} from '../../utils/hooks';
 import {turnOffPlayMusicTooltip} from '../../redux/slice/tooltip.slice';
 import {LogBox} from 'react-native';
+import {Freeze} from 'react-freeze';
 
 LogBox.ignoreLogs(['ReactImageView: Image source "null" doesn\'t exist']);
 function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
@@ -72,6 +73,8 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     }, []),
   );
   useEffect(() => {
+    console.log(AppState.currentState);
+
     // player
     const preparePlayer = async () => {
       console.log('preparePlayer');
@@ -105,7 +108,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       true,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [AppState.currentState]);
 
   React.useEffect(() => {
     // bottom tab
@@ -222,11 +225,38 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     },
   ).current;
 
+  const [currentLyric, setCurrentLyric] = useState<
+    {
+      startTime: number;
+      endTime: number;
+      text: string;
+    }[]
+  >();
+
+  useEffect(() => {
+    const filteredIndex = timeData.findIndex(
+      item =>
+        progress.position >= item.startTime &&
+        progress.position <= item.endTime,
+    );
+    if (filteredIndex === -1) {
+      return;
+    }
+    const newLyric = [
+      timeData[filteredIndex],
+      timeData[filteredIndex + 1] || [],
+    ];
+    if (newLyric !== currentLyric) {
+      setCurrentLyric(newLyric);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress.position]);
+
   return (
     <SafeAreaView style={{flex: 1}}>
       <Portal>
         <Modal
-          visible={playMusicTooltip}
+          visible={playMusicTooltip && !!queue}
           contentContainerStyle={{
             flex: 1,
           }}>
@@ -246,7 +276,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       {queue && (
         <ImageBackground
           source={{
-            uri: queue && queue[activeTrackIndex]?.artwork,
+            uri: queue[activeTrackIndex]?.artwork,
           }}
           style={[styles.container, {paddingBottom: tabBarHeight}]}>
           <BlurView
@@ -259,16 +289,28 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
           <View style={[styles.header, {marginTop: insets.top}]}>
             <View>
               <Text style={styles.headline}>
-                {queue && queue[activeTrackIndex]?.title}
+                {queue[activeTrackIndex]?.title}
               </Text>
               <Text style={[styles.body, {color: colors.white_75}]}>
-                {queue && queue[activeTrackIndex]?.artist}
+                {queue[activeTrackIndex]?.artist}
               </Text>
             </View>
             <TouchableOpacity>
               <Ionicons name="search" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
+
+          {currentLyric && (
+            <View style={{marginHorizontal: 16, marginBottom: 16}}>
+              <Text
+                style={[{fontSize: 20, fontWeight: 'bold', color: 'white'}]}>
+                {currentLyric[0].text}
+              </Text>
+              <Text style={[{fontSize: 16, color: 'white', opacity: 0.5}]}>
+                {currentLyric[1].text}
+              </Text>
+            </View>
+          )}
 
           {/* artwork */}
           <FlatList
@@ -292,14 +334,16 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
             renderItem={({item}) => {
               return (
                 <View style={styles.artWorkWrapper}>
-                  <Image
-                    source={{
-                      uri:
-                        item.artwork ??
-                        'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
-                    }}
-                    style={[styles.artwork]}
-                  />
+                  <Freeze
+                    freeze={!item.artwork}
+                    placeholder={<Text>Loading</Text>}>
+                    <Image
+                      source={{
+                        uri: item.artwork,
+                      }}
+                      style={[styles.artwork]}
+                    />
+                  </Freeze>
                 </View>
               );
             }}
@@ -360,3 +404,23 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
 }
 
 export default PlayMusicScreen;
+
+const timeData = [
+  {
+    startTime: 0,
+    endTime: 37,
+    text: 'Anh thường hay vẫn nằm mơ về một ngôi nhà',
+  },
+  {startTime: 38, endTime: 40, text: 'Ở một nơi chỉ có đôi ta'},
+  {startTime: 41, endTime: 45, text: 'Nơi đã có anh và em xây từng câu chuyện'},
+  {startTime: 46, endTime: 49, text: 'Cùng sẻ chia về những ước mơ'},
+  {
+    startTime: 50,
+    endTime: 54,
+    text: 'Trên trời cao muôn vì sao soi từng con đường',
+  },
+  {startTime: 55, endTime: 57, text: 'Hoà làn mây cùng gió đến đây'},
+  {startTime: 58, endTime: 62, text: 'Em đã nói sẽ ở bên anh thật lâu và'},
+  {startTime: 63, endTime: 65, text: 'Chẳng thể quên được những vấn vương'},
+  // Thêm các phần tử khác nếu cần
+];

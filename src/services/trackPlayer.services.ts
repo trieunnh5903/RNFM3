@@ -59,11 +59,11 @@ export async function addTracks() {
     {
       id: 'Anh Là Ai',
       url: require('../assets/audio/Anh-La-Ai-Phuong-Ly.mp3'),
-      // title: 'Anh Là Ai',
-      // artist: 'Phương Ly',
-      // duration: 4 * 60 + 17,
-      // artwork:
-      //   'https://photo-resize-zmp3.zmdcdn.me/w600_r300x169_jpeg/thumb_video/1/0/8/9/1089716e93a958a8aade92de364f415a.jpg',
+      title: 'Anh Là Ai',
+      artist: 'Phương Ly',
+      duration: 4 * 60 + 17,
+      artwork:
+        'https://photo-resize-zmp3.zmdcdn.me/w600_r300x169_jpeg/thumb_video/1/0/8/9/1089716e93a958a8aade92de364f415a.jpg',
     },
     {
       id: 'One Summer Day',
@@ -71,8 +71,8 @@ export async function addTracks() {
       title: 'One Summer Day',
       artist: 'Joe Hisashi',
       duration: 4 * 60 + 5,
-      // artwork:
-      //   'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
+      artwork:
+        'https://photo-resize-zmp3.zmdcdn.me/w256_r1x1_jpeg/cover/b/f/0/1/bf0182328238f2a252496a63e51f1f74.jpg',
     },
     {
       id: 'Mascara',
