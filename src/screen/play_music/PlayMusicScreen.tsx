@@ -65,6 +65,8 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
   const dispatch = useAppDispatch();
   const swipeOffset = useSharedValue(6);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>(RepeatMode.Queue);
+
+  //status bar
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('default');
@@ -72,46 +74,9 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
       StatusBar.setTranslucent(true);
     }, []),
   );
-  useEffect(() => {
-    console.log(AppState.currentState);
 
-    // player
-    const preparePlayer = async () => {
-      console.log('preparePlayer');
-      await configPlayer();
-      await initQueue();
-      await TrackPlayer.getQueue().then(value => setQueue(value));
-      synchronizeUI();
-    };
-
-    if (AppState.currentState === 'active') {
-      preparePlayer();
-    }
-    const synchronizeUI = async () => {
-      let index = await TrackPlayer.getActiveTrackIndex();
-      const repeat = await TrackPlayer.getRepeatMode();
-      setRepeatMode(repeat);
-      console.log('synchronizeUI');
-      if (index !== undefined) {
-        setActiveTrackIndex(index);
-        if (queue && queue?.length > 0) {
-          artWorkRef.current?.scrollToIndex({index, animated: false});
-        }
-        // artWorkRef.current?.scrollToIndex({index, animated: false});
-      }
-    };
-
-    // tooltip
-    swipeOffset.value = withRepeat(
-      withTiming(-swipeOffset.value, {duration: 600}),
-      -1,
-      true,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [AppState.currentState]);
-
+  //event bottom tab
   React.useEffect(() => {
-    // bottom tab
     const unsubscribe = navigation.addListener('tabPress', async e => {
       if (isFocused) {
         e.preventDefault();
@@ -127,6 +92,7 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     transform: [{translateX: swipeOffset.value}],
   }));
 
+  //event tooltip
   const handleTooltipPress = () => {
     dispatch(turnOffPlayMusicTooltip());
   };
@@ -148,7 +114,41 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     }
   };
 
-  // player event
+  //event player
+  useEffect(() => {
+    console.log(AppState.currentState);
+    const preparePlayer = async () => {
+      console.log('preparePlayer');
+      await configPlayer();
+      await initQueue();
+      await TrackPlayer.getQueue().then(value => setQueue(value));
+      synchronizeUI();
+    };
+
+    if (AppState.currentState === 'active') {
+      preparePlayer();
+    }
+    const synchronizeUI = async () => {
+      let index = await TrackPlayer.getActiveTrackIndex();
+      const repeat = await TrackPlayer.getRepeatMode();
+      setRepeatMode(repeat);
+      console.log('synchronizeUI');
+      if (index !== undefined) {
+        setActiveTrackIndex(index);
+        if (queue && queue?.length > 0) {
+          artWorkRef.current?.scrollToIndex({index, animated: false});
+        }
+      }
+    };
+
+    swipeOffset.value = withRepeat(
+      withTiming(-swipeOffset.value, {duration: 600}),
+      -1,
+      true,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [AppState.currentState]);
+
   useTrackPlayerEvents(
     [
       Event.PlaybackActiveTrackChanged,
@@ -225,35 +225,9 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
     },
   ).current;
 
-  const [currentLyric, setCurrentLyric] = useState<
-    {
-      startTime: number;
-      endTime: number;
-      text: string;
-    }[]
-  >();
-
-  useEffect(() => {
-    const filteredIndex = timeData.findIndex(
-      item =>
-        progress.position >= item.startTime &&
-        progress.position <= item.endTime,
-    );
-    if (filteredIndex === -1) {
-      return;
-    }
-    const newLyric = [
-      timeData[filteredIndex],
-      timeData[filteredIndex + 1] || [],
-    ];
-    if (newLyric !== currentLyric) {
-      setCurrentLyric(newLyric);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progress.position]);
-
   return (
     <SafeAreaView style={{flex: 1}}>
+      {/* tooltip */}
       <Portal>
         <Modal
           visible={playMusicTooltip && !!queue}
@@ -299,18 +273,6 @@ function PlayMusicScreen({navigation}: PlayMusicScreenProps) {
               <Ionicons name="search" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
-
-          {currentLyric && (
-            <View style={{marginHorizontal: 16, marginBottom: 16}}>
-              <Text
-                style={[{fontSize: 20, fontWeight: 'bold', color: 'white'}]}>
-                {currentLyric[0].text}
-              </Text>
-              <Text style={[{fontSize: 16, color: 'white', opacity: 0.5}]}>
-                {currentLyric[1].text}
-              </Text>
-            </View>
-          )}
 
           {/* artwork */}
           <FlatList
@@ -422,5 +384,83 @@ const timeData = [
   {startTime: 55, endTime: 57, text: 'Hoà làn mây cùng gió đến đây'},
   {startTime: 58, endTime: 62, text: 'Em đã nói sẽ ở bên anh thật lâu và'},
   {startTime: 63, endTime: 65, text: 'Chẳng thể quên được những vấn vương'},
+  {startTime: 66, endTime: 70, text: 'Có thể anh mơ'},
+  {startTime: 71, endTime: 74, text: 'Chỉ là giấc mơ về một hạnh phúc'},
+  {startTime: 75, endTime: 76, text: 'Nắng phai trên mi ai (trên mi ai)'},
+  {startTime: 77, endTime: 81, text: 'Giờ em nơi đâu có biết chăng nơi này'},
+  {startTime: 82, endTime: 84, text: 'Có lẽ em đã quên rồi'},
+  {
+    startTime: 85,
+    endTime: 90,
+    text: 'Từng chiếc ôm trong tiết sang trời trở đông',
+  },
+  {
+    startTime: 91,
+    endTime: 93,
+    text: 'Những ngón tay ta đan chặc',
+  },
+  {
+    startTime: 94,
+    endTime: 96,
+    text: 'Nhìn nhau thật lâu và chẳng cần nói điều gì',
+  },
+  {startTime: 97, endTime: 100, text: 'No no every night alone'},
+  {
+    startTime: 101,
+    endTime: 105,
+    text: 'Đừng để giọt nước mắt vẫn rơi tàn hoa khắp nơi thiếu em babe',
+  },
+  {startTime: 106, endTime: 65, text: 'Every night alone'},
+  {startTime: 100, endTime: 109, text: 'Lại gọi tên những nỗi nhớ đong đầy'},
+  {startTime: 115, endTime: 112, text: 'Oh oh oh oh'},
+  {startTime: 133, endTime: 134, text: 'Bao đam mê cũng đã chóng phai'},
+  {startTime: 135, endTime: 137, text: 'Yêu em không biết đúng sai'},
+  {
+    startTime: 138,
+    endTime: 143,
+    text: 'Chỉ bằng cảm xúc bằng lý trí bằng tất cả những gì anh có hay em cho',
+  },
+  {
+    startTime: 144,
+    endTime: 149,
+    text: 'Khi hai con tim lệch nhịp anh có cố gắng thế nào em cũng không hiểu được em như là bản thân chính em',
+  },
+  {startTime: 150, endTime: 152, text: 'Có thể anh mơ'},
+  {startTime: 153, endTime: 156, text: 'Chỉ là giấc mơ về một hạnh phúc'},
+  {startTime: 157, endTime: 160, text: 'Nắng phai trên mi ai (trên mi ai)'},
+  {
+    startTime: 161,
+    endTime: 165,
+    text: 'Giờ em nơi đâu có biết chăng nơi này (có biết chăng nơi này)',
+  },
+  {startTime: 166, endTime: 169, text: 'Có lẽ em đã quên rồi'},
+  {
+    startTime: 170,
+    endTime: 174,
+    text: 'Từng chiếc ôm trong tiết sang trời trở đông (trở đông yeh)',
+  },
+  {startTime: 175, endTime: 176, text: 'Những ngón tay ta đan chặt'},
+  {
+    startTime: 177,
+    endTime: 179,
+    text: 'Nhìn nhau thật lâu và chẳng cần nói điều gì',
+  },
+  {startTime: 180, endTime: 184, text: 'No no every night alone'},
+  {
+    startTime: 185,
+    endTime: 190,
+    text: 'Đừng để giọt nước mắt vẫn rơi tàn hoa khắp nơi thiếu em babe',
+  },
+  {startTime: 191, endTime: 193, text: 'Every night alone'},
+  {startTime: 194, endTime: 198, text: 'Lại gọi tên những nỗi nhớ đong đầy'},
+  {startTime: 199, endTime: 201, text: 'No no every night alone'},
+  {
+    startTime: 202,
+    endTime: 206,
+    text: 'Đừng để giọt nước mắt vẫn rơi tàn hoa khắp nơi thiếu em babe',
+  },
+  {startTime: 207, endTime: 209, text: 'Every night alone'},
+  {startTime: 210, endTime: 218, text: 'Lại gọi tên những nỗi nhớ đong đầy'},
+  {startTime: 219, endTime: 304, text: 'Every night alone huh'},
   // Thêm các phần tử khác nếu cần
 ];
